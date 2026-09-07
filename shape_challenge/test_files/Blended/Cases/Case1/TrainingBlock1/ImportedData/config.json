@@ -1,0 +1,31 @@
+{
+    "header": {
+        "type": "Noesis_compact",
+        "version": "2025.2",
+        "name": "blended",
+        "file_extension": "noesis_bin",
+        "description": "OBJ results"
+    },
+    "experiments": {
+        "number of experiments": 121,
+        "folder_names": "exp_%d",
+        "starting_index": 1
+    },
+    "variables": {
+        "inputs": {
+            "ShellMesh": {
+                "Ncomp": 3,
+                "Ndom": 1,
+                "Nnondom": [
+                ],
+                "basename": "blended",
+                "extension": ".stl"
+            }
+        },
+        "outputs": {
+            
+        },
+        "coordinates": {
+        }
+    }
+}

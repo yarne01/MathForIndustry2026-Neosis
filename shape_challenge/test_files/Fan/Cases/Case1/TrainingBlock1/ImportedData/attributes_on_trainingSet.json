@@ -1,0 +1,48 @@
+{
+    "inputs": {
+        "ShellMesh": {
+            "min": [
+                -164.705
+            ],
+            "max": [
+                71.258
+            ]
+        }
+    },
+    "outputs": {
+        "pressure": {
+            "min": [
+                -3.43145e+02
+            ],
+            "max": [
+                1.68785e+02
+            ]
+        }
+    },
+    "coordinates": {
+        "Nodal-Coordinates|x": {
+            "min": [
+                -5.71061e+01
+            ],
+            "max": [
+                5.76759e+01
+            ]
+        },
+        "Nodal-Coordinates|y": {
+            "min": [
+                -5.79825e+01
+            ],
+            "max": [
+                5.75126e+01
+            ]
+        },
+        "Nodal-Coordinates|z": {
+            "min": [
+                -2.00000e+01
+            ],
+            "max": [
+                2.00000e+01
+            ]
+        }
+    }
+}
