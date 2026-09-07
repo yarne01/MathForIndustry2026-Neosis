@@ -1,1 +1,4 @@
-/shape_challenge/test_files/
+/shape_challenge/results/images/*
+/shape_challenge/results/jsons/*
+/shape_challenge/results/pcas/*
+/shape_challenge/results/sdfs/*
