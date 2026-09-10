@@ -1,0 +1,198 @@
+\documentclass[11pt, aspectratio=169]{beamer}
+
+% --- Essential Presentation Packages ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{booktabs} 
+\usepackage{amsmath, amssymb}
+
+\usepackage{CustomBeamer, svg}
+
+% --- Typography ---
+% Emulating the clean, screen-optimized presentation style
+\usepackage{helvet} 
+\renewcommand{\familydefault}{\sfdefault}
+
+% --- Color Palette Definition ---
+% Using the characteristic deep teal/blue-green aesthetic tones
+\definecolor{PartnerMainColor}{RGB}{0, 85, 105}     % Deep Teal/Blue-Green accent
+\definecolor{PartnerLightColor}{RGB}{235, 243, 245} % Ultra-light tint for blocks
+\definecolor{PartnerAlertColor}{RGB}{204, 51, 51}    % Soft red for warnings
+\definecolor{PartnerTextDark}{RGB}{40, 40, 40}       % Off-black for optimal reading
+
+% --- Custom Beamer Theme Override ---
+\usetheme{Boadilla} 
+
+% Colors mapping
+\setbeamercolor{palette primary}{bg=PartnerMainColor, fg=white}
+\setbeamercolor{palette secondary}{bg=PartnerMainColor!85, fg=white}
+\setbeamercolor{palette tertiary}{bg=PartnerMainColor!70, fg=white}
+\setbeamercolor{structure}{fg=PartnerMainColor}
+\setbeamercolor{text}{fg=PartnerTextDark}
+
+% Blocks styling (Subtle, clean, and framed)
+\setbeamercolor{block title}{bg=PartnerMainColor, fg=white}
+\setbeamercolor{block body}{bg=PartnerLightColor, fg=PartnerTextDark}
+\setbeamercolor{block title alerted}{bg=PartnerAlertColor, fg=white}
+\setbeamercolor{block body alerted}{bg=PartnerAlertColor!10, fg=PartnerTextDark}
+
+% Inner layout customizations 
+\setbeamertemplate{navigation symbols}{} % Remove busy bottom icons
+\setbeamertemplate{sections/subsections in toc}[sections numbered]
+
+% --- Presentation Meta Information ---
+\title[Shape Space]{The Shape Space Challenge}
+\subtitle{Shared Objectives \& Working Group Framework}
+\author[Yarne, Arthur, Darren, Ben]{Yarne Thijs (UHasselt), Arthur Van Beersel (VUB), Darren Zammit (RuG), Ben Minogue (UTwente) \\\textcolor{red}{Please fill in your name here!}}
+\institute[Noesis]{Noesis}
+\date[9 / 11 / 2026]{9 / 11 / 2026}
+
+% --- Document Frame Architecture ---
+\begin{document}
+
+% 1. Title Slide
+{\setbeamertemplate{footline}{} % Hides footer on title slide for clean look
+\begin{frame}
+    \titlepage
+\end{frame}
+}
+
+% 2. Overview / Agenda
+\begin{frame}{Agenda \& Scope}
+    \tableofcontents
+\end{frame}
+
+% 3. Content Slide with structural text
+\section{Project Framework}
+\begin{frame}{Strategic Overview}
+    \framesubtitle{An overview of common working parameters}
+    
+    This clean layout uses a split top/bottom bar configuration to keep data highly visible while maintaining generous white margins.
+    
+    \begin{itemize}
+        \item \textbf{Interoperability:} Fits neutral or combined environments perfectly.
+        \item \textbf{High-Contrast Elements:} Built using off-black text for screen legibility.
+        \item \textbf{Transition Logic:} Clean lines help step through dense concepts.
+    \end{itemize}
+\end{frame}
+
+% 4. Multi-Column Slide layout 
+\section{Technical Blocks}
+\begin{frame}{Comparative Focus Areas}
+    \begin{columns}[T]
+        
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Joint Pillar A}
+                Standardized presentation formatting built using modern screen aspect ratios.
+            \end{block}
+        \end{column}
+        
+        \begin{column}{0.48\textwidth}
+            \begin{alertblock}{Critical Thresholds}
+                Important call-outs or warnings use a contrasting tone to grab prompt focus.
+            \end{alertblock}
+        \end{column}
+        
+    \end{columns}
+\end{frame}
+
+
+
+
+
+
+
+\section{Metric Distance Definition}
+\begin{frame}{Metric Distance}
+    \begin{enumerate}
+        \item Why it is needed
+        \item What had been done in the project
+        \item What was expanded upon, which ones were introduced
+        \begin{enumerate}
+            \item Hausdorff
+            \item Chamfer
+            \item Wasserstein
+            \item Custom SDF-INT solution 
+        \end{enumerate}
+        \item What objects are we measuring with this metric function?
+    \end{enumerate}
+
+    $$ d(\vec{x}, Y) = \inf_{\vec{y} \in Y} d(\vec{x}, \vec{y}) $$
+\end{frame}
+
+\subsection{Hausdorff}
+\begin{frame}{Hausdorff}
+
+    \begin{columns}
+        \begin{column}{0.6\textwidth}
+
+            Traditional definition:
+            
+            $$ d_H(X,Y) := \max \left\{ \sup_{\vec{x} \in X}  d(\vec{x}, Y)  , \sup_{\vec{y} \in Y}  d(X, \vec{y})  \right\} $$
+
+            Definition within the existing library: 
+
+            $$ \tilde{d}_H(X,Y) = \sup_{\vec{x} \in X} \left( d(\vec{x}, Y) ^2\right) + \sup_{\vec{y} \in Y} \left( d(X, \vec{y}) ^2\right) $$
+        \end{column}
+        
+        \begin{column}{0.3\textwidth}
+            \begin{figure}
+                \centering
+                \includegraphics[width=\linewidth]{figs/Hausdorff_distance_sample.png}
+                \caption{$\sup \inf$ visualisation \tiny{(\url{https://en.wikipedia.org/wiki/Hausdorff_distance})}}
+            \end{figure}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+
+
+
+
+
+\subsection{Chamfer}
+\begin{frame}{Chamfer}
+
+    \begin{columns}
+        \begin{column}{0.6\textwidth}
+
+            \begin{enumerate}
+                \item Not True metric, fails $\triangle$ inequality
+
+                $$ d_C(X,Y) = \sum_{\vec{x} \in X} d(\vec{x}, Y)  + \sum_{\vec{y} \in Y} d(X, \vec{y}) $$
+
+                
+                \item Same issue, but different :D
+
+                $$ \tilde{d}_C(X,Y) = \Imp[mean]_{\vec{x} \in X} \left( d(\vec{x}, Y)  \right) + \Imp[mean]_{\vec{y} \in Y} \left( d(X, \vec{y}) ) \right) $$
+                
+            \end{enumerate}
+            
+            
+        \end{column}
+        \begin{column}{0.3\textwidth}
+            \begin{figure}
+                \centering
+                \includegraphics[width=\linewidth]{figs/Hausdorff_distance_sample.png}
+                \caption{$\sup \inf$ visualisation \tiny{(\url{https://en.wikipedia.org/wiki/Hausdorff_distance})}}
+            \end{figure}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+
+
+\section{Custom SDF-INT measure}
+\begin{frame}{Custom SDF-INT measure}
+    $$ d_I := \int_{\Omega} \left\| d(\vec{\omega}, X), d(\vec{\omega}, Y) \right\| d\vec{\omega}$$
+
+    $$\Omega = [x_1, x_2] \times [y_1, y_2] \times [z_1, z_2]$$
+
+    
+\end{frame}
+
+
+\maketitle
+
+\end{document}

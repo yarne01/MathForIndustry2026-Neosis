@@ -3,8 +3,8 @@
 
 \usepackage{fullpage}
 
-\title{PhD week 2026 for Neosis - Shape Theory}
-\author{Yarne Thijs (UHasselt), Arthur Van Beersel(VUB) \kleur{Please fill in your name here!}}
+\title{PhD week 2026 for Noesis - Shape Theory}
+\author{Yarne Thijs (UHasselt), Arthur Van Beersel (VUB), Darren Zammit (RuG) \kleur{Please fill in your name here!}}
 \begin{document}
 \maketitle \vfill \tableofcontents \newpage
 
@@ -17,14 +17,21 @@
     \subsection{What to do, workpackage}
 
         \begin{enumerate}
-            \item Changing the distance Function
-            \item Find literature with relevance
-            \item Try a new approach than SDF FPCA, maybe change  diff algorithms
-            \item Make a Benchmark / reference to see what we produce 
-            \item Visualisation, this can be re-used instead of reinventing the weel
+            \item Changing the Signed Distance Function
+            \item Find literature with relevance to this topic
+            \item Try a new approach than SDF FPCA, maybe change diff algorithms
+            \item Make a Benchmark / reference to see what we produce is better.
             \item Reconstruction: proposition, what has been done in literature, and what we could do / implement it.
-            \item 
         \end{enumerate}
+
+    There were some discussions detailing the Hausdorff space and distance function. As wel as beckface culling and how to handle disapearring meshes. The search for relevant sources in literature was prominent and some discussions about the way STL files are handled were gruitfull.
+
+\section{Second Day}
+
+Tried Kernel PCA, but it gave a similar or slightly worse result at best so far. Also tried quadratic decoders for reconstruction with the PCA modes (using products of the modes) but it didn't yield better results. Could be useful to try sparse polynomial decoders.
+
+\section{Third Day}
+
 
 
 \end{document}

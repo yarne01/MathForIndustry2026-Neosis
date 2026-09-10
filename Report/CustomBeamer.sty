@@ -1,0 +1,252 @@
+% Pretty sqrt
+    \let\oldsqrt\sqrt
+    \newcommand{\ClosedSqrt}[1][\hphantom{3}]{\def\DHLindex{#1}\mathpalette\DHLhksqrt}
+    \makeatletter
+        \newcommand*\bold@name{bold}
+        \def\DHLhksqrt#1#2{%
+            \setbox0=\hbox{$#1\oldsqrt{#2\,}$}\dimen0=\ht0\relax%
+            \advance\dimen0-0.2\ht0\relax% size of the added box is still 0.2 times ht0
+            \setbox2=\hbox{\vrule height\ht0 depth -\dimen0}%
+            {\hbox{$#1\expandafter\oldsqrt\expandafter[\DHLindex]{#2\,}$}
+            \lower\ifx\math@version\bold@name0.6pt\else0.4pt\fi\box2}
+        }
+        % root index positioning and added space at the end, mostly noticeable in inline math mode
+        \renewcommand*{\sqrt}[2][\ ]{\ClosedSqrt[\leftroot{-2}\uproot{1}#1]{#2}\kern0.1em} 
+    \makeatother
+
+
+\newcommand{\kleur}[2][red]{\textcolor{#1}{#2}}
+%  \newcommand{\link}[2]{\IfNoValueTF{#2}{\href{#1}{\texttt{#1}}}{\href{#1}{\texttt{#2}}}}
+\newcommand{\link}[1]{\href{#1}{\kleur[blue]{\texttt{#1}}}}
+\newcommand{\linknaam}[2]{\href{#1}{\kleur[blue]{\texttt{#2}}}}
+
+
+\newcommand{\limx}[2][x]{\lim\limits_{{#1}\to{#2}}}
+\newcommand{\limm}[1][m]{\limx[#1]{\infty}}
+
+\newcommand{\mat}[3][pmatrix]{\begin{#1} #2 \\ #3 \end{#1}}
+\newcommand{\imp}[2][\implies]{\mathrel{\overset{\mbox{\normalfont\tiny\sffamily #2}}{#1}}}
+
+\newcommand\myeq{\mathrel{\overset{\makebox[0pt]{\mbox{\normalfont\tiny\sffamily def}}}{=}}}
+
+
+
+
+\newcommand{\Imp}[1][\implies]{\operatorname*{#1}\limits}
+
+
+
+
+
+
+\usepackage{graphicx}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \embedvideo{<poster or text>}{<video file (MP4+H264)>}
+% \embedvideo*{...}{...}                     % auto-play
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\usepackage[bigfiles]{pdfbase}
+\ExplSyntaxOn
+\NewDocumentCommand\embedvideo{smm}{
+  \group_begin:
+  \leavevmode
+  \tl_if_exist:cTF{file_\file_mdfive_hash:n{#3}}{
+    \tl_set_eq:Nc\video{file_\file_mdfive_hash:n{#3}}
+  }{
+    \IfFileExists{#3}{}{\GenericError{}{File~`#3'~not~found}{}{}}
+    \pbs_pdfobj:nnn{}{fstream}{{}{#3}}
+    \pbs_pdfobj:nnn{}{dict}{
+      /Type/Filespec/F~(#3)/UF~(#3)
+      /EF~<</F~\pbs_pdflastobj:>>
+    }
+    \tl_set:Nx\video{\pbs_pdflastobj:}
+    \tl_gset_eq:cN{file_\file_mdfive_hash:n{#3}}\video
+  }
+  %
+  \pbs_pdfobj:nnn{}{dict}{
+    /Type/RichMediaInstance/Subtype/Video
+    /Asset~\video
+    /Params~<</FlashVars (
+      source=#3&
+      skin=SkinOverAllNoFullNoCaption.swf&
+      skinAutoHide=true&
+      skinBackgroundColor=0x5F5F5F&
+      skinBackgroundAlpha=0.75
+    )>>
+  }
+  %
+  \pbs_pdfobj:nnn{}{dict}{
+    /Type/RichMediaConfiguration/Subtype/Video
+    /Instances~[\pbs_pdflastobj:]
+  }
+  %
+  \pbs_pdfobj:nnn{}{dict}{
+    /Type/RichMediaContent
+    /Assets~<<
+      /Names~[(#3)~\video]
+    >>
+    /Configurations~[\pbs_pdflastobj:]
+  }
+  \tl_set:Nx\rmcontent{\pbs_pdflastobj:}
+  %
+  \pbs_pdfobj:nnn{}{dict}{
+    /Activation~<<
+      /Condition/\IfBooleanTF{#1}{PV}{XA}
+      /Presentation~<</Style/Embedded>>
+    >>
+    /Deactivation~<</Condition/PI>>
+  }
+  %
+  \hbox_set:Nn\l_tmpa_box{#2}
+  \tl_set:Nx\l_box_wd_tl{\dim_use:N\box_wd:N\l_tmpa_box}
+  \tl_set:Nx\l_box_ht_tl{\dim_use:N\box_ht:N\l_tmpa_box}
+  \tl_set:Nx\l_box_dp_tl{\dim_use:N\box_dp:N\l_tmpa_box}
+  \pbs_pdfxform:nnnnn{1}{1}{}{}{\l_tmpa_box}
+  %
+  \pbs_pdfannot:nnnn{\l_box_wd_tl}{\l_box_ht_tl}{\l_box_dp_tl}{
+    /Subtype/RichMedia
+    /BS~<</W~0/S/S>>
+    /Contents~(embedded~video~file:#3)
+    /NM~(rma:#3)
+    /AP~<</N~\pbs_pdflastxform:>>
+    /RichMediaSettings~\pbs_pdflastobj:
+    /RichMediaContent~\rmcontent
+  }
+  \phantom{#2}
+  \group_end:
+}
+\ExplSyntaxOff
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% \section{autoplay}
+% \embedvideo*{\includegraphics[page=1]{example-movie}}{example-movie}
+% \newpage
+% \section{play on click}
+% \embedvideo{\includegraphics[page=1]{example-movie}}{test.mp4}
+
+
+
+
+
+
+
+\usepackage{xkeyval}
+\usepackage{zref-abspage}
+\usepackage{media9}
+\makeatletter
+\define@boolkey{simplemedia}{autoplay}{\def\simplemediaautoplay{#1}}
+\define@boolkey{simplemedia}{showGUI}{\def\simplemediashowGUI{#1}}
+\define@key{simplemedia}{repeatCount}{\def\simplemediarepeatCount{#1}} 
+\presetkeys{simplemedia}{autoplay=true,showGUI=true,repeatCount=1}{}
+
+% all page-references relate to: Adobe PDF Reference, sixth edition, November 2006, can be found e.g.:
+%https://ghostscript.com/~robin/pdf_reference17.pdf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \simplemedia[<options>]{<poster or text>}{<media file>}{MIME type}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\ExplSyntaxOn
+%\cs_new:Npn\simplemedia[3][]{
+\newcommand\simplemedia[4][]{%
+  \setkeys{simplemedia}{#1}%
+  \leavevmode
+  \pbs_pdfobj:nnn{}{fstream}{{}{#3}}
+  \pbs_pdfobj:nnn{}{dict}{
+    /Type/Filespec/F~(#3)/UF~(#3)
+    /EF~<</F~\pbs_pdflastobj:>>
+  }
+  %
+  \pbs_pdfobj:nnn{}{dict}{
+      /CT~(#4)% content type, page 764, table 9.9
+      /D~\pbs_pdflastobj:% full file spcification, page 764, table 9.9
+      /N~(Media~clip~from~#3)% name of media clip, page 764, table 9.8
+      /P~<</TF (TEMPACCESS)>>% media permissions, page 764, table 9.9
+      /S~/MCD% subtype media-clip-data, page 764, table 9.8
+  }
+  %
+  \pbs_pdfobj:nnn{}{dict}{
+      /C~\pbs_pdflastobj:% media clip dictionary, page 762, table 9.6
+      /N~(RenditionFrom#3)% name of rendition, page 759, table 9.1
+      /P~<<% media play parameters dictionary, page 762, table 9.6
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%       Here's the point to switch on/off player GUI
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        /BE~<</C~\simplemediashowGUI~%C: display a player-specific controller user interface, page 769, table 9.15
+        /A~true>>~%A: automatically play when activated, page 770, table 9.15
+        % select player (not used here)
+%        /PL~<</A~[% arrray of media player info objects page 777
+%%        <</PID~<</U~(vnd.adobe.swname:ADBE_MCI)~>>~>>~% PID: software identifier object, page 779
+%        <</PID~<</U~(vnd.adobe.swname:MSFT_WindowsMediaPlayer)~/OS[(win16)~(win32)~(win9x)~(winnt)~(wince)]>>~>>~%/OS operating system, page 780
+%        ]~>>
+      ~>>
+      /S~/MR% subtype of rendition, page 759, table 9.1
+  }
+  %
+  \tl_set:Nx\mediarendition{\pbs_pdflastobj:}
+  %  
+  \pbs_pdfobj:nnn{}{dict}{}% obj-number created for later use
+  \tl_set:Nx\renditionactionplay{\pbs_pdflastobj:}%
+  %
+  \pbs_pdfobj:nnn{}{dict}{}% obj-number created for later use
+  \tl_set:Nx\renditionactionstop{\pbs_pdflastobj:}%
+  %
+  \hbox_set:Nn\l_tmpa_box{#2}% size of annotation
+  \tl_set:Nx\l_box_wd_tl{\dim_use:N\box_wd:N\l_tmpa_box}
+  \tl_set:Nx\l_box_ht_tl{\dim_use:N\box_ht:N\l_tmpa_box}
+  \tl_set:Nx\l_box_dp_tl{\dim_use:N\box_dp:N\l_tmpa_box}
+  \pbs_pdfxform:nnnnn{1}{1}{}{}{\l_tmpa_box}
+  %
+  \tl_set:Nx\l_simplem_current_page_tl{\zref@extract{simplem@\int_use:N\g_simplem_id_int}{abspage}}
+  \pbs_pdfannot:nnnn{\l_box_wd_tl}{\l_box_ht_tl}{\l_box_dp_tl}{
+      /T~(AnnotationFrom#3)~% title of screen annotation, page 640, table 8.38 
+      /Subtype~/Screen~% Subtype Sreen, page 616, table 8.20 and page 640, table 8.38
+      /BS~<</W~1/S/S>>% Borderstyle
+      /C~[0.039216~0.039216~0.039216]% color used background, title bar, border, page 607, table 8.15
+      /Contents~(EmbeddedAudiofile#3)% Text to be displayed, page 606, table 8.15
+      /NM~(audioscreenannot:#3)% annotation name, page 606, table 8.15
+      /AP~<</N~\pbs_pdflastxform:>>% appearance dictionary, page 606, table 8.15
+      /F~4~%Annotation flag, page 606, table 8.15 and page 608, table 8.16
+      /A~\renditionactionplay~% Action to be performed, page 640 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%       Here's the point to switch on/off autoplay
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      % autoplay is realised by "additional action" (page 640), 
+      % PageOpen (PO) -> play "Play Rendition"
+      % PageClose (PC) -> play "Stop Rendition" (see page 650)
+      /AA~<<\ifKV@simplemedia@autoplay~/PO~\renditionactionplay~\fi~/PC~\renditionactionstop~>>~%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%       see Adobe pdfmark-reference, I THINK, THIS WORKS ONLY WITH tex->dvips->ps2pdf
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      \int_compare:nT{\l_simplem_current_page_tl>0}{
+        /P~\exp_args:Ne\pdf_pageobject_ref:n{\l_simplem_current_page_tl}
+      }
+      /CA~1%constant opacity value, page 618
+  }
+  % Rendition Action: "Play Rendition"
+  \pbs_pdfobj:nnn{\renditionactionplay}{dict}{%
+      /R~\mediarendition%
+      /S~/Rendition
+      /OP~4%operation to perform (page 669): 4 = play rendition specified by R
+      /AN~\pbs_pdflastann:%
+  }
+  % Rendition Action: "Stop Rendition"
+  \pbs_pdfobj:nnn{\renditionactionstop}{dict}{%
+      /R~\mediarendition%
+      /S~/Rendition
+      /OP~1%operation to perform (page 669): 1 = stop rendition specified by R
+      /AN~\pbs_pdflastann:%
+  }
+  %
+  \phantom{#2}
+  \zref@labelbyprops{simplem@\int_use:N\g_simplem_id_int}{abspage}
+  \int_gincr:N\g_simplem_id_int
+}%
+\int_new:N\g_simplem_id_int
+\ExplSyntaxOff
+\makeatother
+
+% \simplemedia{\vbox to 3cm{\vfil\hbox to 5cm{}\vfil}}{test.mp4}{video/mp4}
+% \simplemedia[,showGUI=false,autoplay=false]{My audio}{test.mp3}{audio/mp3}
+
+
+
+
+
