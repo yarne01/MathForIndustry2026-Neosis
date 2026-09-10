@@ -6,8 +6,6 @@ Once the PCA latent vectors are available, this module can be used to explore
 the latent space and generate synthetic samples. The main workflow is
 
         
-
-
 The entry point is ``plot_training_latent_umap_with_clustering``.
 Its main parameters are:
 
@@ -43,6 +41,11 @@ interactive MST/HDBSCAN Plotly HTML files in ``save_folder``.
 """
 
 import os
+import copy
+import open3d as o3d
+import plotly.graph_objects as go
+import plot_utils
+
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -54,6 +57,7 @@ from sklearn.cluster import HDBSCAN
 from sklearn.neighbors import NearestNeighbors
 from sklearn.preprocessing import StandardScaler
 
+from sdf_pca_utils import reconstruct_mesh
 
 STANDARD_SEED = 42
 
@@ -275,7 +279,6 @@ def reconstruct_synthetic_meshes(
     sample_titles=None,
 ):
     """Reconstruct Open3D meshes from synthetic PCA latent samples."""
-    from sdf_pca_utils import reconstruct_mesh
 
     synthetic_samples = np.asarray(synthetic_samples, dtype=float)
     if synthetic_samples.size == 0:
@@ -312,8 +315,7 @@ def show_synthetic_mesh_between_samples(
     save_folder=None,
 ):
     """Display and optionally save source, synthetic, and target meshes."""
-    import copy
-    import open3d as o3d
+    
 
     meshes = [copy.deepcopy(mesh) for mesh in (source_mesh, synthetic_mesh, target_mesh)]
     source_extent = np.asarray(meshes[0].get_axis_aligned_bounding_box().get_extent())
@@ -332,8 +334,6 @@ def show_synthetic_mesh_between_samples(
     )
 
     if save_folder is not None:
-        import plot_utils
-
         reference_folder = os.path.join(save_folder, "synthetic meshes with reference")
         os.makedirs(reference_folder, exist_ok=True)
         plot_utils.save_geometries_image(
@@ -428,7 +428,6 @@ def generate_synthetic_meshes_from_mst(
     )
 
     if save_folder is not None and meshes:
-        import plot_utils
 
         synthetic_mesh_folder = os.path.join(save_folder, "synthetic meshes")
         os.makedirs(synthetic_mesh_folder, exist_ok=True)
@@ -687,9 +686,8 @@ def _select_cluster_center_neighbors(latent, centers, n_neighbors=1, selected_ce
     }
 
 
-def _show_cluster_neighbor_meshes(source_meshes, center_neighbors, center_clusters, labels, title):
-    import copy
-    import open3d as o3d
+def _show_cluster_neighbor_meshes(source_meshes, center_neighbors, center_clusters, labels, title, save_folder=None):
+    
 
     if source_meshes is None:
         return
@@ -728,6 +726,15 @@ def _show_cluster_neighbor_meshes(source_meshes, center_neighbors, center_cluste
         mesh_show_wireframe=True,
     )
 
+    if save_folder is not None:
+        os.makedirs(save_folder, exist_ok=True)
+        plot_utils.save_geometries_image(
+            meshes,
+            os.path.join(save_folder, f"{title}.png"),
+            window_title=title,
+            axis="z",
+        )
+
 
 def plot_cluster_center_neighbors_3d(
     latent,
@@ -741,7 +748,6 @@ def plot_cluster_center_neighbors_3d(
     show=True,
 ):
     """Display samples and selected cluster-center neighbours in 3D Plotly."""
-    import plotly.graph_objects as go
 
     latent = np.asarray(latent, dtype=float)
     centers = np.asarray(centers, dtype=float)
@@ -864,7 +870,7 @@ def compare_mst_clusters(
         figure.write_html(os.path.join(save_folder, "mst_cluster_center_neighbors.html"))
     if show_meshes:
         _show_cluster_neighbor_meshes(source_meshes, center_neighbors, component_ids, labels,
-                                      "MST cluster center nearest neighbours")
+                                      "MST cluster center nearest neighbours", save_folder=save_folder)
     return {"mst_edges": mst_edges, "pruned_edges": pruned_edges, "cluster_labels": cluster_labels,
             "centers": centers, "center_neighbors": center_neighbors,
             "center_clusters": component_ids, "figure": figure}
@@ -905,7 +911,7 @@ def compare_hdbscan_clusters(
         figure.write_html(os.path.join(save_folder, "hdbscan_cluster_center_neighbors.html"))
     if show_meshes:
         _show_cluster_neighbor_meshes(source_meshes, center_neighbors, component_ids, labels,
-                                      "HDBSCAN cluster center nearest neighbours")
+                                      "HDBSCAN cluster center nearest neighbours", save_folder=save_folder)
     return {"clusterer": clusterer, "cluster_labels": cluster_labels, "centers": centers,
             "center_neighbors": center_neighbors, "center_clusters": component_ids,
             "figure": figure}
@@ -1020,7 +1026,7 @@ def plot_umap_with_clustering(
     if save_folder is not None:
         os.makedirs(save_folder, exist_ok=True)
         prefix = f"{case}_" if case else ""
-        figure.savefig(os.path.join(save_folder, f"{prefix}_k={n_neighbors}_{pruning_method}_{pruning_value}.png"), dpi=300, bbox_inches="tight")
+        figure.savefig(os.path.join(save_folder, f"{prefix}_{clustering_method}_k={n_neighbors}_{pruning_method}_{pruning_value}.png"), dpi=300, bbox_inches="tight")
     if show:
         plt.show()
 
@@ -1142,7 +1148,7 @@ def plot_training_latent_umap_with_clustering(
             os.makedirs(save_folder, exist_ok=True)
             prefix = f"{case}_" if case else ""
             figure.savefig(
-                os.path.join(save_folder, f"{prefix}umap_with_cluster_centers.png"),
+                os.path.join(save_folder, f"{prefix}{clustering_method}_umap_with_{clustering_method}_cluster_centers.png"),
                 dpi=300,
                 bbox_inches="tight",
             )
