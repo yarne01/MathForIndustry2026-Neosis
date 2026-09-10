@@ -2,30 +2,22 @@
 
 Pipeline usage
 --------------
-Run the complete workflow from the repository root with::
+Once the PCA latent vectors are available, this module can be used to explore
+the latent space and generate synthetic samples. The main workflow is
 
-        .\\.noesis_venv\\Scripts\\python.exe sdf_pca_for_KUL.py
+        
 
-The main pipeline parameters are configured near the top of
-``sdf_pca_for_KUL.py``. In particular:
 
-        - ``case_id`` selects Tesla_valve, Sokaris, Blended, or Fan.
-        - ``load_project`` loads cached SDF/PCA data when compatible caches exist.
-        - ``reduced_exp_number`` limits the number of experiments processed.
-        - ``evaluate_*`` and ``make_plot_*`` booleans enable or disable workflow
-            stages such as reconstruction, distance analysis, SOM, UMAP, and sampling.
-        - ``compare_clusters`` enables both MST and HDBSCAN center comparisons.
-        - ``cluster_center_neighbors`` sets the number of original sample meshes
-            selected for each cluster center.
-        - ``selected_cluster_center`` selects one center by index, or ``None``
-            compares every center.
-
-The reusable entry point is ``plot_training_latent_umap_with_clustering``.
+The entry point is ``plot_training_latent_umap_with_clustering``.
 Its main parameters are:
 
         - ``training_latent``: array with shape ``(n_samples, n_features)``.
-        - ``labels``: optional label for every sample, usually experiment names.
         - ``clustering_method``: ``"mst"`` or ``"hdbscan"``.
+        - ``evaluate_*`` and ``make_plot_*`` booleans enable or disable workflow
+                    stages such as reconstruction, distance analysis, SOM, UMAP, and sampling.
+        - ``compare_clusters`` enables both MST and HDBSCAN center comparisons.
+        - ``cluster_center_neighbors`` sets the number of original sample meshes
+                    selected for each cluster center.
         - ``n_neighbors``: latent-space kNN size for MST or HDBSCAN.
         - ``umap_neighbors`` and ``min_dist``: UMAP embedding settings.
         - ``metric``: distance metric used by UMAP and clustering.
@@ -43,6 +35,8 @@ Its main parameters are:
         - ``case`` and ``save_folder``: output naming and save location.
         - ``show``: displays figures when ``True``; figures are still saved when
             ``save_folder`` is provided.
+        - ``selected_cluster_center`` selects one center by index, or ``None``
+            compares every center.
 
 When comparisons are enabled, the workflow can save the final UMAP PNG and
 interactive MST/HDBSCAN Plotly HTML files in ``save_folder``.
