@@ -310,7 +310,7 @@ def plot_distance_matrix(D_, title_='Distance Matrix',
 
     fig, ax = plt.subplots(figsize=(8, 7))
 
-    im = ax.imshow(D_, interpolation="nearest")
+    im = ax.imshow(D_, interpolation='nearest')
     fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
 
     ax.set_title(title_)
@@ -341,7 +341,7 @@ def plot_distance_matrix(D_, title_='Distance Matrix',
                     tick.set_color("red")
                     tick.set_fontweight("bold")
 
-    fig.tight_layout()
+    # fig.tight_layout() # To re-enable
 
     if save_folder:
         filename = gen_utils.clean_plot_title(title_)
@@ -349,7 +349,8 @@ def plot_distance_matrix(D_, title_='Distance Matrix',
 
         fig.savefig(f"{path_and_name}.png",
                     dpi=300,
-                    bbox_inches="tight")
+                    bbox_inches="tight"
+                    )
 
         with open(f"{path_and_name}.pkl", "wb") as f:
             pickle.dump(fig, f)
