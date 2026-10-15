@@ -52,6 +52,7 @@ import geometry_utils as geom_utils
 import plot_utils as plot_utils
 import sdf_pca_utils as sdf_pca
 import sdf_plot_utils as sdf_plot
+import evaluation_utils as eval_utils
 
 # ensure reproducibility
 standard_seed = 42
@@ -178,6 +179,9 @@ make_plot_new_maximin = True
 make_plot_new_gaussian = True
 make_plot_new_multigaussian = True
 make_plot_new_interpolate = True
+
+# 15. Repair and evaluate the reconstructed geometries of 6. and 14. (pure Python MeshFix, see repair_utils.py)
+repair_reconstructions = False  # saves quality before/after repair as <name>_repair.json in the jsons folder
 
 # ----------------------------------------------------------------------------------------------------------------------
 # ----------------------------------------------------------------------------------------------------------------------
@@ -502,9 +506,11 @@ if evaluate_reconstruction:
 
         logging.info(f"Test index geoemtry: {test_index}")
         # uses backward projection to create the geometry again and compares it with original geometry
-        sdf_pca.reconstruct_mesh(logger, training_pca, training_latent[test_index], test_index,
-                                 n_grids_x, n_grids_y, n_grids_z, training_sdfs,
-                                 source_mesh, grid_size, make_plot_=True)
+        mesh_reco = sdf_pca.reconstruct_mesh(logger, training_pca, training_latent[test_index], test_index,
+                                             n_grids_x, n_grids_y, n_grids_z, training_sdfs,
+                                             source_mesh, grid_size, make_plot_=True)
+        if repair_reconstructions:
+            eval_utils.repair_and_report(logger, mesh_reco, f"reconstruction_{test_index}", jsons_folder)
     logging.info("")
 
 
@@ -832,9 +838,12 @@ if generate_new_samples and \
             new_design, dist_from_existing = sdf_pca.simplified_maximim_sampling(updated_all_latent,
                                                                                  bounds_=bounds_training_latent)
             logging.info(f"\t\tDesign number {i}\nvalues {new_design}, distance from existing: {dist_from_existing}")
-            sdf_pca.reconstruct_mesh(logger, training_pca, new_design, None, n_grids_x, n_grids_y, n_grids_z,
-                                     None, None, grid_size, make_plot_=True,
-                                     title_=f'Maximin sampling')
+            mesh_reco = sdf_pca.reconstruct_mesh(logger, training_pca, new_design, None,
+                                                 n_grids_x, n_grids_y, n_grids_z,
+                                                 None, None, grid_size, make_plot_=True,
+                                                 title_=f'Maximin sampling')
+            if repair_reconstructions:
+                eval_utils.repair_and_report(logger, mesh_reco, f"maximin_{i}", jsons_folder)
             updated_all_latent = np.vstack([updated_all_latent, new_design])
 
     # small gaussian perturbations - somehow better
@@ -844,9 +853,12 @@ if generate_new_samples and \
         for i in range(generate_new_samples):
             new_design = training_latent[i] + sigma * np.random.randn(training_latent.shape[1])
             logging.info(f"\t\tDesign number {i}\n\tvalues: {new_design}, \n\texisting: {training_latent[i]}")
-            sdf_pca.reconstruct_mesh(logger, training_pca, new_design, None, n_grids_x, n_grids_y, n_grids_z,
-                                     None, None, grid_size, make_plot_=True,
-                                     title_=f'Gaussian perturbation from source geometry {training_meshes_exp[i]}')
+            mesh_reco = sdf_pca.reconstruct_mesh(logger, training_pca, new_design, None,
+                                                 n_grids_x, n_grids_y, n_grids_z,
+                                                 None, None, grid_size, make_plot_=True,
+                                                 title_=f'Gaussian perturbation from source geometry {training_meshes_exp[i]}')
+            if repair_reconstructions:
+                eval_utils.repair_and_report(logger, mesh_reco, f"gaussian_{i}", jsons_folder)
 
     # multivariate gaussian sampling
     if make_plot_new_multigaussian:
@@ -856,9 +868,12 @@ if generate_new_samples and \
         for i in range(generate_new_samples):
             new_design = np.random.multivariate_normal(mean, cov)
             logging.info(f"\t\tDesign number {i}\n\tvalues: {new_design}")
-            sdf_pca.reconstruct_mesh(logger, training_pca, new_design, None, n_grids_x, n_grids_y, n_grids_z,
-                                     None, None, grid_size, make_plot_=True,
-                                     title_=f"Multivariate normal, test {i}")
+            mesh_reco = sdf_pca.reconstruct_mesh(logger, training_pca, new_design, None,
+                                                 n_grids_x, n_grids_y, n_grids_z,
+                                                 None, None, grid_size, make_plot_=True,
+                                                 title_=f"Multivariate normal, test {i}")
+            if repair_reconstructions:
+                eval_utils.repair_and_report(logger, mesh_reco, f"multigaussian_{i}", jsons_folder)
 
     # interpolate reasonably close designs
     if make_plot_new_interpolate:
@@ -886,7 +901,10 @@ if generate_new_samples and \
             if len(original_indices) > 1:
                 new_design = 0.5 * training_latent[original_indices[0]] + 0.5 * training_latent[
                     original_indices[1]]
-                sdf_pca.reconstruct_mesh(logger, training_pca, new_design, None, n_grids_x, n_grids_y, n_grids_z,
-                                         None, None, grid_size, make_plot_=True,
-                                         title_=f"Average of geometries {labels_all[original_indices[0]]} and "
-                                                f"{labels_all[original_indices[1]]}")
+                mesh_reco = sdf_pca.reconstruct_mesh(logger, training_pca, new_design, None,
+                                                     n_grids_x, n_grids_y, n_grids_z,
+                                                     None, None, grid_size, make_plot_=True,
+                                                     title_=f"Average of geometries {labels_all[original_indices[0]]} "
+                                                            f"and {labels_all[original_indices[1]]}")
+                if repair_reconstructions:
+                    eval_utils.repair_and_report(logger, mesh_reco, f"interpolation_{i}", jsons_folder)

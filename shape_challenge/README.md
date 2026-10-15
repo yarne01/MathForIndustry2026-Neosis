@@ -198,6 +198,49 @@ Plots specific to the SDF/PCA workflow:
 
 ---
 
+### Evaluation
+
+```
+evaluation_utils.py
+```
+
+Geometry checks and comparisons on `(vertices, faces)` arrays:
+
+- mesh quality: components, holes, non-manifold edges/vertices, orientation, watertightness, genus, volume, self-intersections
+- surface comparison: two-sided point-to-surface distances, Chamfer, Hausdorff, normal angle, F-score
+- shape descriptors and curvature
+- symmetry with respect to a plane
+- distance matrix and diversity summary of a set of meshes
+
+### Mesh repair
+
+```
+repair_utils.py
+```
+
+Pure Python (NumPy/SciPy) version of the default MeshFix v2.1 pipeline, so no external binary is needed:
+
+1. `fix_connectivity`: weld duplicate vertices, remove degenerate/duplicate triangles, cut non-manifold edges and vertices, orient faces
+2. `keep_largest_component`
+3. `fill_holes`: triangulate each hole, refine the patch and fair the new vertices
+4. `mesh_clean`: remove degenerate triangles and self-intersecting regions, then refill
+
+```python
+import repair_utils as repair
+import evaluation_utils as evaluation
+
+vertices, faces, info = repair.repair_mesh(vertices, faces, logger=logger)
+quality = evaluation.mesh_quality(vertices, faces)
+```
+
+`evaluation_plot_utils.py` draws before/after pass-rate bars, a per-check matrix and mesh stage renders.
+`Mesh_evaluation.py` runs evaluation and repair on a few meshes from `test_files/` and writes a JSON summary to `results/jsons/evaluation/`.
+In `sdf_pca_for_KUL.py`, set `repair_reconstructions = True` (step 15) to repair every geometry reconstructed in
+steps 6 and 14 and save its quality before/after repair as `<name>_repair.json` in `results/jsons/<case>/`.
+Tests (needs `pip install pytest`): `python -m pytest test_evaluation_repair.py`.
+
+---
+
 # Requirements
 Developed and tested using Python3.10 on Windows OS. See requirements.txt for the full list of necessary packages.
 
