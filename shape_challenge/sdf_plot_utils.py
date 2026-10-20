@@ -347,9 +347,7 @@ def plot_distance_matrix(D_, title_='Distance Matrix',
         filename = gen_utils.clean_plot_title(title_)
         path_and_name = os.path.join(save_folder, filename)
 
-        fig.savefig(f"{path_and_name}.png",
-                    dpi=300,
-                    bbox_inches="tight")
+        fig.savefig(f"{path_and_name}.png",dpi=300,bbox_inches="tight")
 
         with open(f"{path_and_name}.pkl", "wb") as f:
             pickle.dump(fig, f)

@@ -1,3 +1,5 @@
+from asyncio.windows_events import NULL
+
 import open3d as o3d
 import numpy as np
 import logging
@@ -16,7 +18,7 @@ from sklearn.metrics import silhouette_score
 from scipy.spatial import procrustes  # used to re-organize the UMAPs
 from scipy.spatial.distance import cdist
 from scipy.spatial import cKDTree
-from scipy.stats import percentileofscore
+from scipy.stats import percentileofscore, wasserstein_distance, wasserstein_distance_nd
 
 from skimage import measure
 
@@ -24,6 +26,8 @@ import plot_utils as plot_utils
 import sdf_plot_utils as sdf_plot
 
 from minisom import MiniSom
+
+import ot
 
 standard_seed = 42
 np.random.seed(seed=standard_seed)
@@ -1420,8 +1424,8 @@ def reconstruct_mesh(logger, pca_, latent_, index_, n_grids_x_, n_grids_y_,
         logger.info(f"Reconstruction MSE: {error}")
 
     if mesh_orig is not None:
-        hd = mesh_hausdorff(mesh_orig, mesh_reco)
-        logger.info(f"Hausdorff distance: {hd}")
+        hd = mesh_comparator(logger, [mesh_orig, mesh_reco])
+        logger.info(f"Metric distances: {hd}")
 
     if make_plot_:
 
@@ -1692,14 +1696,9 @@ def sample_points(mesh, n_points=10000):
     points, _ = trimesh.sample.sample_surface(mesh, n_points)
     return points
 
-
-def hausdorff_distance(points_a, points_b):
+def get_distance_of_meshes(meshinfo_a, meshinfo_b, metric="Hausdorff"):
     """
-    Compute the symmetric Hausdorff distance between two point clouds.
-
-    For each point cloud, the distance to its nearest neighbor in the other
-    point cloud is computed. The returned value is the sum of the squared
-    maximum nearest-neighbor distances in both directions.
+    Compute the metric distance between two meshinfo instances. Derived from Hausdorff distance calculator
 
     Parameters
     ----------
@@ -1712,43 +1711,128 @@ def hausdorff_distance(points_a, points_b):
     Returns
     -------
     float
-        Symmetric Hausdorff distance computed as
-
-            max(A → B)^2 + max(B → A)^2
-
-        where ``A → B`` denotes the nearest-neighbor distances from points in
-        ``A`` to points in ``B``.
 
     Notes
     -----
     Nearest-neighbor searches are accelerated using
     ``scipy.spatial.cKDTree``.
     """
-
-    tree_a = cKDTree(points_a)
-    tree_b = cKDTree(points_b)
-
-    dist_a, _ = tree_b.query(points_a)  # A → B
-    dist_b, _ = tree_a.query(points_b)  # B → A
-
-    # use Hausdorff distance (max) rather than mean
-    cd = np.max(dist_a ** 2) + np.max(dist_b ** 2)
-    return cd
+    # Early exit: check if the object has the same pointer and thus will evaluate to 0
+    if meshinfo_a == meshinfo_b: return 0
 
 
-def mesh_hausdorff(mesh1, mesh2, n_points=10000):
-    """ Compute the symmetric Hausdorff distance between two surface meshes.
 
-    The meshes are first uniformly sampled to generate point clouds. The
-    symmetric Hausdorff distance is then evaluated on the sampled points to
-    quantify the maximum geometric deviation between the two surfaces.
+    if metric == "Hausdorff":
+        dist_a, _ = meshinfo_b.tree.query(meshinfo_a.sample_points)  # A → B
+        dist_b, _ = meshinfo_a.tree.query(meshinfo_b.sample_points)  # B → A
+        return np.max(dist_a ** 2) + np.max(dist_b ** 2)
 
+    if metric == "Chamfer":
+        # Watered down version of the next, very similar to Hausdorff
+        dist_a, _ = meshinfo_b.tree.query(meshinfo_a.sample_points)  # A → B
+        dist_b, _ = meshinfo_a.tree.query(meshinfo_b.sample_points)  # B → A
+        return np.mean(dist_a) + np.mean(dist_b)
+
+
+    if metric == "IntNorm-uniform(Yarne)" or metric == "IntNorm(Yarne)":
+
+        ## This is part of the PhD Week changes. No enterprise-grade code :( - Yarne
+
+        box_dimension = [None, None, None]
+        for index_dimension in range(3):
+            array_at_index = [a[index_dimension] for a in meshinfo_a.sample_points + meshinfo_b.sample_points]
+            box_dimension[index_dimension] = (min(array_at_index), max(array_at_index))
+
+        ## Choice: Either we do uniform grid, but then "Warped" space will be disformed, and more calc speed is needed
+        # or we do non uniform, but then the smalles side will be given much more attention.
+        # These are IntNorm-uniform and IntNorm respectively
+
+
+        # 3D Coords to integrate across:
+        total_amount_points = 10 ** 3
+
+
+        length_per_dim = [dimm[1] - dimm[0] for dimm in box_dimension]
+        if metric == "IntNorm-uniform(Yarne)":
+            # Note, completely normal to overshoot the total amount of points. At most, this should be 3 to 9 times as many
+            ratio = np.pow(total_amount_points / np.prod(length_per_dim), 1 / 3)
+            amount_points_per_dimm = [max(int(np.floor(l * ratio)), 3) for l in length_per_dim]
+        elif metric == "IntNorm(Yarne)":
+            amount_points_per_dimm = [int(np.power(total_amount_points, 1 / 3))] * 3
+        else:
+            raise Exception("This path cannot be reached, please blame memory corruption if you see this message")
+
+        CoordsTODO = [np.linspace(box_dimension[i][0], box_dimension[i][1], amount_points_per_dimm[i]) for i in range(3)]
+        listCoords = []
+        for x in CoordsTODO[0]:
+            for y in CoordsTODO[1]:
+                for z in CoordsTODO[2]:
+                    listCoords.append([x, y, z])
+
+        d_a, _ = meshinfo_a.tree.query(listCoords)
+        d_b, _ = meshinfo_b.tree.query(listCoords)
+
+        d = np.pow(np.abs(d_a - d_b), 2)
+
+        return np.sqrt(np.sum(d) * np.prod(np.array(length_per_dim) / np.array(amount_points_per_dimm)))  # / np.prod(amount_points_per_dimm)
+
+
+    if metric == "Wasserstein-Direct":
+        # Computes 1-Wasserstein distance directly
+        print(f"Begin wasserstein distance with {len(meshinfo_a.sample_points)} points in firstmesh")
+        if len(meshinfo_a.sample_points) > 100:
+            print(f"This is extremely not recommended as it will take a long time and a lot of RAM")
+            print(f"Compute is at order $O(N^3)$ and $O(N^3 log N)$")
+        return wasserstein_distance_nd(meshinfo_a.sample_points, meshinfo_b.sample_points)
+
+
+    CONST_CHOICE_WASSERSTEIN_1 = True
+    if metric == "Wasserstein-POT":
+        # Assign uniform weights to all sample points
+        weight_a = np.ones(len(meshinfo_a.sample_points)) / len(meshinfo_a.sample_points)
+        weight_b = np.ones(len(meshinfo_b.sample_points)) / len(meshinfo_b.sample_points)
+
+        # Compute ground distance matrix M (Euclidean distance between each pair of points)
+        # For W1 distance, use Euclidean distance. For W2, use squared Euclidean distance.
+        cost_matrix = ot.dist(meshinfo_a.sample_points, meshinfo_b.sample_points, metric='euclidean')
+
+        if CONST_CHOICE_WASSERSTEIN_1:
+            # Calculate the 1-Wasserstein distance
+            w_distance = ot.emd2(weight_a, weight_b, cost_matrix)
+        else:
+            # For 2-Wasserstein distance:
+            cost_matrix_sq = ot.dist(meshinfo_a.sample_points, meshinfo_b.sample_points, metric='sqeuclidean')
+            w_distance = np.sqrt(ot.emd2(weight_a, weight_b, cost_matrix_sq))
+
+        return w_distance
+
+    if metric == "Wasserstein-Sliced":
+        # This is more of a low-res version such that is easily computable
+        NUMBER_OF_PROJECTIONS = 100
+
+        # Project 3D points onto random direction vectors
+        directions = np.random.randn(NUMBER_OF_PROJECTIONS, 3)
+        directions /= np.linalg.norm(directions, axis=1, keepdims=True)
+
+        distances = []
+        for d in directions:
+            proj1 = meshinfo_a.sample_points @ d
+            proj2 = meshinfo_b.sample_points @ d
+            distances.append(wasserstein_distance(proj1, proj2))
+
+        return np.mean(distances)
+
+
+
+
+
+    raise Exception("You have provided a non-existing metric. Please change your ways")
+
+def _get_sample_points(mesh, n_points=10000):
+    """
     Parameters
     ----------
-     mesh1 : open3d.geometry.TriangleMesh or trimesh.Trimesh
-        First input mesh.
-
-    mesh2 : open3d.geometry.TriangleMesh or trimesh.Trimesh
+    mesh : open3d.geometry.TriangleMesh or trimesh.Trimesh
         Second input mesh.
 
     n_points : int, optional
@@ -1758,9 +1842,7 @@ def mesh_hausdorff(mesh1, mesh2, n_points=10000):
 
     Returns
     -------
-    float
-        Approximate symmetric Hausdorff distance between the two meshes,
-        computed from the sampled point clouds.
+    ssample points of the meshes
 
     Notes
     -----
@@ -1769,18 +1851,90 @@ def mesh_hausdorff(mesh1, mesh2, n_points=10000):
     - Surface sampling is performed uniformly with respect to triangle area.
     - The returned distance is an approximation whose accuracy depends on the
     number of sampled points.
+
+    Used to be part of "mesh_hausdorff" function
     """
+    return sample_points(o3d_to_trimesh(mesh) if not isinstance(mesh, trimesh.Trimesh) else mesh, n_points)
 
-    # Convert if needed
-    if not isinstance(mesh1, trimesh.Trimesh):
-        mesh1 = o3d_to_trimesh(mesh1)
-    if not isinstance(mesh2, trimesh.Trimesh):
-        mesh2 = o3d_to_trimesh(mesh2)
 
-    pts1 = sample_points(mesh1, n_points)
-    pts2 = sample_points(mesh2, n_points)
+def mesh_comparator(logger, list_of_meshes=(), calc_norms = None):
+    """ Compute the metric distance between two or more surface meshes.
 
-    return hausdorff_distance(pts1, pts2)
+    The meshes are first uniformly sampled to generate point clouds. The
+    metric distance is then evaluated on the sampled points to
+    quantify the maximum geometric deviation between the two surfaces.
+    Which metrics are included can be specified by the last parameter,
+     but the default is all except the time hogging ones
+
+    Parameters
+    ----------
+    logger : logging.Logger
+        Logger used to report progress and diagnostics.
+
+
+    list_of_meshes : iterable, preferably a list or tuple of meshes
+        Meshes here can exist as open3d.geometry.TriangleMesh or trimesh.Trimesh
+
+    calc_norms : string or iterable of string
+        which metric distance function to calculate
+
+    Returns
+    -------
+    when 2 meshes are given a dict of each metric used and it's result
+    when more meshes are given: a dict of each metric used as key and a matrix specifying each comparison as value
+
+    Notes
+    -----
+    - If the input meshes are Open3D meshes, they are first converted to
+    ``trimesh.Trimesh`` objects.
+    - Surface sampling is performed uniformly with respect to triangle area.
+    - The returned distance is an approximation whose accuracy depends on the
+    number of sampled points.
+
+    Nearest-neighbor searches are accelerated using
+    ``scipy.spatial.cKDTree``.
+    """
+    if calc_norms == None: # in case empty, do everything
+        calc_norms = ("Hausdorff", "Chamfer", "IntNorm(Yarne)", "IntNorm-uniform(Yarne)", "Wasserstein-Direct", "Wasserstein-POT", "Wasserstein-Sliced")
+        # When debugging / quickly is important:
+        calc_norms =  ("Hausdorff", "Chamfer", "IntNorm-uniform(Yarne)", "Wasserstein-Sliced")
+    elif isinstance(calc_norms, str): # in case only 1, then make ready for iteration thay only yields 1
+        calc_norms = (calc_norms,)
+
+    class mesh_info:
+        def __init__(self, mesh):
+            self.mesh = mesh
+            self.sample_points = _get_sample_points(self.mesh)
+            self.tree = cKDTree(self.sample_points)
+
+    list_of_info = [mesh_info(mesh) for mesh in list_of_meshes]
+
+    relationship = dict()
+    for key in calc_norms: relationship[key] = np.zeros((len(list_of_info), len(list_of_info)))
+
+    logger.info("Stated with comparing metrics")
+
+    for metric in calc_norms:
+        counter_max = 0
+        for i, a in enumerate(list_of_info):
+            for j, b in enumerate(list_of_info):
+                if i > j:
+                    value = get_distance_of_meshes(a, b, metric)
+
+                    relationship[metric][i][j] = value
+                    relationship[metric][j][i] = value
+
+                    counter_max += 1
+            #     if counter_max > 5: break
+            # if counter_max > 5: break
+        logger.info(f"Finished creating the covariance for metric {metric}")
+
+        if len(list_of_info) > 2:
+            sdf_plot.plot_distance_matrix(relationship[metric], title_=metric)
+
+    if len(list_of_info) == 2:
+        return {metric: value[0][1] for metric, value in relationship.items()}
+    return relationship
 
 
 def compute_vertex_errors(mesh_a, mesh_b):

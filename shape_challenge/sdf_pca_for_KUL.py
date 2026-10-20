@@ -125,7 +125,7 @@ evaluate_modes = False  # adds visualization of the first min(5, n_modes)
 
 # 6. Reconstruct a shape from the training set
 # number of test reconstruction from latent space back to full goemetry, None to skip else number of tests
-evaluate_reconstruction = False
+evaluate_reconstruction = True
 n_reconstructions = 2
 
 # 7. Build distance metrics on training set
@@ -133,9 +133,9 @@ make_plot_distance_matrix = True
 
 # 8. Compare new geometries (random or specific experiments removed from training set)
 # also used in UMAP to see wheere they land
-evaluate_new_samples = False  # number of random geometries used for evaluation, False to skip
+evaluate_new_samples = True  # number of random geometries used for evaluation, False to skip
 n_new_samples = 0  # number of tests
-evaluate_specified_new_samples = True  # number of geometries used for evaluation, False to skip
+evaluate_specified_new_samples = False  # number of geometries used for evaluation, False to skip
 plot_new_samples = False  # plot the new geometries compared with existing ones
 plot_pca_foreach_new_experiment = True  # plot each new experiment in latent space
 plot_comparison_foreach_new_experiment = False  # plot distance of proposed experiment from training dataset
@@ -367,6 +367,29 @@ else:
                                                  axis=axis)
     gen_utils.write_json(case_exp_bb, jsons_folder, f"{len(list_of_exp_sorted_)}.json")
 
+
+logging.warning("Now were gonna do the correlation mesh depending on Hausdorff and the others :D - Yarne")
+
+relationship = sdf_pca.mesh_comparator(logger, training_meshes)
+
+# D_training = pairwise_distances(training_latent, metric='euclidean')
+# D_training_sorted, labels_training_sorted = sdf_pca.distance_matrix_sorting(sorting_type=sorting_logic,
+#                                                                             latent_space=training_latent,
+#                                                                             D=D_training,
+#                                                                             labels=training_meshes_exp)
+#
+# # plot distance matrix, as is (experiment by experiment) and sorted according to selected logic
+# if make_plot_distance_matrix:
+#     sdf_plot.plot_distance_matrix(D_training, title_="General distance Matrix (PCA space)", labels=training_meshes_exp,
+#                                   save_folder=images_folder)
+#     sdf_plot.plot_distance_matrix(D_training_sorted, title_=f"Sorted ({sorting_logic}) General distance Matrix (PCA space)",
+#                                   labels=labels_training_sorted,
+#                                   save_folder=images_folder)
+#
+# logging.info("")
+
+
+
 logging.info(f"Global geometry BB:")
 logging.info(f"\tX: {round(geometric_bb['x_min'], 2)} to {round(geometric_bb['x_max'], 2)}")
 logging.info(f"\tY: {round(geometric_bb['y_min'], 2)} to {round(geometric_bb['y_max'], 2)}")
@@ -487,7 +510,7 @@ if evaluate_modes:
 # ----------------------------------------------------------------------------------------------------------------------
 if evaluate_reconstruction:
     logging.info(" 6. Reconstruct a shape from the training set ------------------------------------------------------")
-    for test_index in np.random.randint(len(training_meshes_exp), size=n_reconstructions):
+    for test_index in specific_new_samples_ID: #np.random.randint(len(training_meshes_exp), size=n_reconstructions):
 
         # need the geometry, if load_project than it is not available, and must be loaded
         if len(training_meshes) == 0 or load_project:

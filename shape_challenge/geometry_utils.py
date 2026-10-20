@@ -267,6 +267,7 @@ def get_mesh_bounding_box(mesh_, logger_, text=""):
     logger_.debug(f"\t{text} AABB max corner: {aabb.get_max_bound()}")
     logger_.debug(f"\t{text} AABB center: {aabb.get_center()}")
 
+
     return aabb
 
 
