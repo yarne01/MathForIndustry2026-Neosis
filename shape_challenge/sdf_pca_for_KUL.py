@@ -77,7 +77,7 @@ scaler_design_variables = MinMaxScaler(feature_range=(-1, 1))  # StandardScaler(
 # ----------------------------------------------------------------------------------------------------------------------
 #                                                                                                   Paths and parameters
 # ----------------------------------------------------------------------------------------------------------------------
-case_id = 3  # index from following list
+case_id = 0  # index from following list
 case_list = ["Tesla_valve", "Sokaris", "Blended", "Fan"]
 case = case_list[case_id]  # "tesla_valve" "sokaris" "blended"
 
@@ -95,13 +95,13 @@ else:
     sys.exit(1)
 
 # reload boundaries from previous case and sdfs
-load_project = False
+load_project = True
 # suppress all additional logs messages while loading geometries in load_project
 suppress_all_logs = True
 # 'first_PCA_component', 'hierarchical_clustering', 'optimal_leaf'
 sorting_logic = 'optimal_leaf'
 
-generate_images = True  # Use it once to generate the images for all the geometries (using load_project = False)
+generate_images = False  # Use it once to generate the images for all the geometries (using load_project = False)
 reduced_exp_number = 50  # limits the total number of geometries loaded, None to load all the available ones
 n_closest_geometries = 1  # number of the closest geometries to be identifed for every candidate
 
@@ -117,7 +117,7 @@ plot_cumulative_pca = False  # plot components vs representativeness
 save_latent_space = True
 
 # 4. Report variance,
-full_variance_report = False  # report variance and cumulative variance for all modes
+full_variance_report = True  # report variance and cumulative variance for all modes
 variance_threshold = .99  # target variance to be achieved (number of modes to get this or better)
 
 # 5. Visualize mode variations,
@@ -129,11 +129,11 @@ evaluate_reconstruction = True
 n_reconstructions = 2
 
 # 7. Build distance metrics on training set
-make_plot_distance_matrix = False
+make_plot_distance_matrix = True
 
 # 8. Compare new geometries (random or specific experiments removed from training set)
 # also used in UMAP to see wheere they land
-evaluate_new_samples = False  # number of random geometries used for evaluation, False to skip
+evaluate_new_samples = True  # number of random geometries used for evaluation, False to skip
 n_new_samples = 0  # number of tests
 evaluate_specified_new_samples = False  # number of geometries used for evaluation, False to skip
 plot_new_samples = False  # plot the new geometries compared with existing ones
@@ -142,7 +142,7 @@ plot_comparison_foreach_new_experiment = False  # plot distance of proposed expe
 specific_new_samples_ID = None  # if None, n_new_samples random are selected, otherwise specified ids are removed
 
 # remove and later evaluate specific experiments, like most similar and most different
-if evaluate_specified_new_samples or True:
+if evaluate_specified_new_samples:
     if case_id == 0:  # tesla
         specific_new_samples_ID = [0, 7, 10, 19, 21]
     elif case_id == 1: # sokaris
@@ -173,7 +173,7 @@ evaluate_som = True  # uses SOM to represent experiments in the domain
 evaluate_umap = True  # uses UMPA to represent experiments in the domain
 
 # 14. Propose new geometries
-generate_new_samples = 0  # number of new geometries that will be created from maximin of latent space
+generate_new_samples = 3  # number of new geometries that will be created from maximin of latent space
 make_plot_new_maximin = True
 make_plot_new_gaussian = True
 make_plot_new_multigaussian = True
