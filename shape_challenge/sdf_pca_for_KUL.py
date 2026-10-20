@@ -543,7 +543,7 @@ D_training_sorted, labels_training_sorted = sdf_pca.distance_matrix_sorting(sort
                                                                             labels=training_meshes_exp)
 
 # plot distance matrix, as is (experiment by experiment) and sorted according to selected logic
-if make_plot_distance_matrix or True:
+if make_plot_distance_matrix:
     sdf_plot.plot_distance_matrix(D_training, title_="General distance Matrix (PCA space)", labels=training_meshes_exp,
                                   save_folder=images_folder)
     sdf_plot.plot_distance_matrix(D_training_sorted, title_=f"Sorted ({sorting_logic}) General distance Matrix (PCA space)",
